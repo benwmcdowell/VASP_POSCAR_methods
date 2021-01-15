@@ -44,10 +44,12 @@ def add_seldyn(mode, ifile, ofile,reverse, **args):
                 
     elif mode == 'range':
         for i in range(len(coord)):
+            counter=0
             for j in range(3):
                 if coord[i][j]>ranges[j][0] and coord[i][j]<ranges[j][1]:
-                    frozen_atoms.append(i)
-                    break
+                    counter+=1
+            if counter==3:
+                frozen_atoms.append(i)
     else:
         print('mode not recognized. exiting...')
         sys.exit(1)
