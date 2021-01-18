@@ -17,7 +17,7 @@ def add_seldyn(mode, ifile, ofile,reverse, **args):
     if 'direct' in args:
         direct=args['direct']
     else:
-        direct=True
+        direct=False
     if 'ranges' in args:
         ranges=args['ranges']
     frozen_atoms=[]
@@ -194,9 +194,9 @@ help options:
             except ValueError:
                 pass
         if i in ['-p','--reference_position']:
-            reference_position=j
+            reference_position=array([float(k) for k in j.split(',')])
         if i in ['-t','--tolerance']:
-            tolerance=j
+            tolerance=float(j)
         if i in ['-d','--direct']:
             direct=True
         if i in ['-w','--range']:
