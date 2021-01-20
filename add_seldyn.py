@@ -28,8 +28,10 @@ def add_seldyn(mode, ifile, ofile,reverse, **args):
         for i in atomtypes:
             if i in args['frozen_atoms']:
                 for j in range(atomnums[atomtypes.index(i)]):
-                    frozen_atoms.append(j)
-                
+                    frozen_atoms.append(counter)
+                    counter+=1
+            else:
+                counter+=atomnums[atomtypes.index(i)]
     elif mode == 'number':
         frozen_atoms=args['frozen_atoms']
         
@@ -87,14 +89,17 @@ def parse_poscar(ifile):
         latticevectors=array(latticevectors).reshape(3,3)
         atomtypes=lines[5].split()
         atomnums=[int(i) for i in lines[6].split()]
-        if lines[7].split()[0] == 'Direct':
+        if 'Direct' in lines[7] or 'Cartesian' in lines[7]:
             start=8
+            mode=lines[7][0]
         else:
+            mode=lines[8][0]
             start=9
             seldyn=[''.join(lines[i].split()[-3:]) for i in range(start,sum(atomnums)+start)]
         coord=array([[float(lines[i].split()[j]) for j in range(3)] for i in range(start,sum(atomnums)+start)])
-        for i in range(sum(atomnums)):
-            coord[i]=dot(latticevectors,coord[i])
+        if mode!='Cartesian':
+            for i in range(sum(atomnums)):
+                coord[i]=dot(coord[i],latticevectors)
             
     #latticevectors formatted as a 3x3 array
     #coord holds the atomic coordinates with shape ()
@@ -123,12 +128,8 @@ def write_poscar(ofile, lv, coord, atomtypes, atomnums, **args):
         if 'seldyn' in args:
             file.write('Selective Dynamics\n')
         file.write('Direct\n')
-        lv=inv(lv)
         for i in range(len(coord)):
-            coord[i]=dot(lv,coord[i])
-            for j in range(3):
-                if coord[i][j]>1.0:
-                    coord[i][j]-=1.0
+            coord[i]=dot(coord[i],inv(lv))
         for i in range(len(coord)):
             for j in range(3):
                 file.write(str('{:<018f}'.format(coord[i][j])))
