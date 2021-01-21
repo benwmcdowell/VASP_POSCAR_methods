@@ -91,14 +91,20 @@ def parse_poscar(ifile):
         atomnums=[int(i) for i in lines[6].split()]
         if 'Direct' in lines[7] or 'Cartesian' in lines[7]:
             start=8
-            mode=lines[7][0]
+            mode=lines[7].split()[0]
         else:
-            mode=lines[8][0]
+            mode=lines[8].split()[0]
             start=9
             seldyn=[''.join(lines[i].split()[-3:]) for i in range(start,sum(atomnums)+start)]
         coord=array([[float(lines[i].split()[j]) for j in range(3)] for i in range(start,sum(atomnums)+start)])
         if mode!='Cartesian':
             for i in range(sum(atomnums)):
+                for j in range(3):
+                    while coord[i][j]>1.0 or coord[i][j]<0.0:
+                        if coord[i][j]>1.0:
+                            coord[i][j]-=1.0
+                        elif coord[i][j]<0.0:
+                            coord[i][j]+=1.0
                 coord[i]=dot(coord[i],latticevectors)
             
     #latticevectors formatted as a 3x3 array
