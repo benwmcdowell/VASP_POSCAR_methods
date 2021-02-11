@@ -28,4 +28,9 @@ these options take a value:
     -i, --input                    specify an input other than ./POSCAR
     -o, --output                   speicfy an output other than ./POSCAR_seldyn
     
+For copy_seldyn.py the options are:
+Required options:
+     -i, --input                   POSCAR to copy the selective dynamics from
+     -o, --output                  POSCAR to copy the selective dynamics to
+    
     Compatible with VASP 5.4.4, Python 2.7.13 and 3.6.5
