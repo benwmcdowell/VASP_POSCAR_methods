@@ -7,7 +7,12 @@ def copy_seldyn(ifile,ofile):
     seldyn=parse_poscar(ifile)[4]
     lv,coord,atomtypes,atomnums=parse_poscar(ofile)[:4]
     write_poscar(ofile,lv,coord,atomtypes,atomnums,seldyn=seldyn)
+    num_free=0
+    for i in seldyn:
+        if 'T' in i:
+            num_free+=1
     print('selective dynamics conditions copied to {}'.format(ofile))
+    print('{} atoms fully or partially free'.format(num_free))
     
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
@@ -102,4 +107,4 @@ help options:
         copy_seldyn(ifile,ofile)
     except NameError:
         print('incorrect specification of files. exiting...')
-        sys.exit(1)
+        sys.exit()
