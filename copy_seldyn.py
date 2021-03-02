@@ -81,28 +81,27 @@ def write_poscar(ofile, lv, coord, atomtypes, atomnums, **args):
             file.write('\n')
     
 if __name__ == '__main__':
-    short_opts='hi:o:'
-    long_opts=['help','input=','output=','axes=']
+    short_opts='h'
+    long_opts=['help']
     try:
-        opts,args=getopt(sys.argv[1:],short_opts,long_opts)
-    except getopt.GetoptError:
-        print('error in command line syntax')
-        sys.exit(2)
+        ifile=sys.argv[1]
+        ofile=sys.argv[2]
+    except IndexError:
+        print('missing required arguments. exiting...')
+        sys.exit()
+    try:
+        opts,args=getopt(sys.argv[3:],short_opts,long_opts)
+    except IndexError:
+        print('error specifying optional arguments')
+        sys.exit()
     for i,j in opts:
         if i in ['-h','--help']:
             print('''
-required arguments:
-    -i, --input                    path of file that selective dynamics should be copied from
-    -o, --output                   path of file that selective dynamics should be copied to
-    
 help options:
-    -h, --help                    display this error message
+    -h, --help                    the first argument is the POSCAR file to copy selective dynamics from
+                                  the second argument is the POSCAR file to apply the selective dynamics conditions from the former
 ''')
             sys.exit()
-        if i in ['-i','--input']:
-            ifile=j
-        if i in ['-o','--output']:
-            ofile=j
     try:
         copy_seldyn(ifile,ofile)
     except NameError:
