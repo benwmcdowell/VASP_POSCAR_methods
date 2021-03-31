@@ -1,16 +1,22 @@
 from numpy import array,dot,zeros
-from numpy.linalg import inv
+from numpy.linalg import inv,norm
 from getopt import getopt
 import sys
 
-def align_com(ifile):
+#aligns poscar with respect to center of 'mass' (all atoms weighted equally)
+def align_com(ifiles):
     com=[]
-    for i in ifile:
+    for i in ifiles:
         try:
             lv, coord, atomtypes, atomnums, seldyn = parse_poscar(i)
         except ValueError:
             lv, coord, atomtypes, atomnums = parse_poscar(i)
             seldyn='none'
+        if len(com)==0:
+            ref_lv=lv
+            ref_coord=coord
+            ref_atomtypes=atomtypes
+            ref_atomnums=atomnums
         tempvar=zeros(3)
         for j in coord:
             tempvar+=j/sum(atomnums)
@@ -20,10 +26,20 @@ def align_com(ifile):
     for i in range(sum(atomnums)):
         coord[i]+=shift
     
+    reordered_coord=zeros((sum(atomnums),3))
+    for i in range(sum(atomnums)):
+        mindiff=max([norm(lv[j]) for j in range(3)])
+        for j in range(sum(atomnums)):
+            diff=norm(ref_coord[i]-coord[j])
+            if diff<mindiff:
+                min_index=j
+                mindiff=diff
+        reordered_coord[i]=coord[min_index]
+        
     if seldyn=='none':
-        write_poscar(ifile[1],lv,coord,atomtypes,atomnums)
+        write_poscar(ifiles[1],lv,reordered_coord,atomtypes,atomnums)
     else:
-        write_poscar(ifile[1],lv,coord,atomtypes,atomnums,seldyn=seldyn)
+        write_poscar(ifiles[1],lv,reordered_coord,atomtypes,atomnums,seldyn=seldyn)
     
     
 def parse_poscar(ifile):
