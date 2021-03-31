@@ -38,9 +38,15 @@ translate_poscar.py: translates the poscar by the given shift. Atom coordinates 
 Example:
      translate_poscar.py ./POSCAR 0.0,0.0,0.5
      
-align_com.py: aligns the center of mass of the second POSCAR to that of the first
+align_com.py: aligns the center of mass of the second POSCAR to that of the first. atomic indices are reshuffled to match those found in the reference POSCAR
 Example:
      align_com.py reference_this_POSCAR to_align_this_POSCAR
+     
+calc_displacements.py: calculates the displacements for each atom between POSCAR files. atoms must be in the same order between POSCAR files for this to be valid. otherwise use 'align_com.py' first to reshuffle atomic indices
+Returns:
+     diplacements as a numpy array of shape (# of atoms,3)
+Example:
+     calc_displacements.py calculate_diplacements_for_this_POSCAR relative_to_this_POSCAR
 
 
 Compatible with VASP 5.4.4, Python 2.7.13 and 3.6.5
