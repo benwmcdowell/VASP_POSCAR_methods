@@ -212,7 +212,7 @@ help options:
         if i in ['-a','-axes']:
             frozen_axes=j.split(',')
             try:
-                frozen_atoms=[int(i) for i in frozen_atoms]
+                frozen_axes=[int(i) for i in frozen_axes]
             except ValueError:
                 pass
     
