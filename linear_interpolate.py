@@ -2,7 +2,9 @@ import os
 import numpy as np
 from shutil import copyfile
 
-def interpolate_structure(template,output,adatom_type,pos,lv1,lv2,n):
+#adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
+#if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n):
     os.mkdir(output)
     os.chdir(output)
     lv,coord,atomtypes,atomnums=parse_poscar(os.path.join(template,'POSCAR'))[:4]
@@ -13,19 +15,38 @@ def interpolate_structure(template,output,adatom_type,pos,lv1,lv2,n):
     for i in range(sum(atomnums)):
         seldyn.append('FFF')
     seldyn.append('FFT')
+    
+    if os.path.exists(adatom):
+        adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
+        com=np.zeros(3)
+        for i in adatom_coord:
+            com+=i/len(adatom_coord)
+        adatom_coord-=com
+        adatom_coord+=pos
+    else:
+        adatom_coord=[pos]
+        adatom_types=adatom
+    
     for i in range(n):
         for j in range(n):
             os.mkdir('_{}{}'.format(i,j))
+            
             tempcoord=[k for k in coord]
-            tempcoord.append(pos+lv1*i/(n-1)+lv2*j/(n-1))
+            for k in adatom_coord:
+                tempcoord.append(k+lv1*i/(n-1)+lv2*j/(n-1))
             tempcoord=np.array(tempcoord)
+            
             temptypes=[k for k in atomtypes]
-            temptypes.append(adatom_type)
+            for k in adatom_types:
+                temptypes.append(k)
             temptypes=np.array(temptypes)
+            
             tempnums=[k for k in atomnums]
-            tempnums.append(1)
+            tempnums.append(len(adatom_coord))
             tempnums=np.array(tempnums)
+            
             write_poscar(os.path.join('_{}{}'.format(i,j),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+            
             for k in ['KPOINTS','POTCAR','INCAR']:
                 copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i,j),k))
             with open(os.path.join(template,'job.sh'),'r') as file:
