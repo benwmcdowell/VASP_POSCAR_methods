@@ -5,16 +5,15 @@ from shutil import copyfile
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
 def interpolate_structure(template,output,adatom,pos,lv1,lv2,n):
-    os.mkdir(output)
+    try:
+        os.mkdir(output)
+    except FileExistsError:
+        pass
     os.chdir(output)
     lv,coord,atomtypes,atomnums=parse_poscar(os.path.join(template,'POSCAR'))[:4]
     lv1=np.dot(lv1,lv)
     lv2=np.dot(lv2,lv)
     pos=np.dot(pos,lv)
-    seldyn=[]
-    for i in range(sum(atomnums)):
-        seldyn.append('FFF')
-    seldyn.append('FFT')
     
     if os.path.exists(adatom):
         adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
@@ -26,10 +25,19 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n):
     else:
         adatom_coord=[pos]
         adatom_types=adatom
+        
+    seldyn=[]
+    for i in range(sum(atomnums)):
+        seldyn.append('FFF')
+    for i in range(len(adatom_coord)):
+        seldyn.append('FFT')
     
     for i in range(n):
         for j in range(n):
-            os.mkdir('_{}{}'.format(i,j))
+            try:
+                os.mkdir('_{}{}'.format(i,j))
+            except FileExistsError:
+                pass
             
             tempcoord=[k for k in coord]
             for k in adatom_coord:
