@@ -4,7 +4,7 @@ from shutil import copyfile
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
-def interpolate_structure(template,output,adatom,pos,lv1,lv2,n):
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,**args):
     try:
         os.mkdir(output)
     except FileExistsError:
@@ -15,12 +15,21 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n):
     lv2=np.dot(lv2,lv)
     pos=np.dot(pos,lv)
     
+    #if rotation is specified as an argument, the adlayer is rotated counter-clockwise by the angle specified by the argument
+    #'rotation=30' will rotate the adlayer system 30 degrees counter-clockwise around the center of mass
+    if 'rotation' in args:
+        theta=args['rotation']/180*np.pi
+        rot=np.array([[np.cos(theta),-np.sin(theta),0],[np.sin(theta),np.cos(theta),0],[0,0,1.0]])
+    else:
+        rot=np.identity(3)
+    
     if os.path.exists(adatom):
         adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
         com=np.zeros(3)
         for i in adatom_coord:
             com+=i/len(adatom_coord)
         adatom_coord-=com
+        adatom_coord=np.dot(adatom_coord,rot)
         adatom_coord+=pos
     else:
         adatom_coord=[pos]
