@@ -4,7 +4,7 @@ from shutil import copyfile
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
-def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,**args):
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),**args):
     try:
         os.mkdir(output)
     except FileExistsError:
@@ -28,12 +28,13 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,**args):
         com=np.zeros(3)
         for i in adatom_coord:
             com+=i/len(adatom_coord)
-        adatom_coord-=com
+        adatom_coord-=com*adlayer_shift
         adatom_coord=np.dot(adatom_coord,rot)
         adatom_coord+=pos
     else:
         adatom_coord=[pos]
         adatom_types=adatom
+        adatom_nums=[1]
         
     seldyn=[]
     for i in range(sum(atomnums)):
@@ -41,16 +42,51 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,**args):
     for i in range(len(adatom_coord)):
         seldyn.append('FFT')
     
-    for i in range(n):
-        for j in range(n):
+    if interpolate_dim==2:
+        for i in range(n):
+            for j in range(n):
+                try:
+                    os.mkdir('_{}{}'.format(i,j))
+                except FileExistsError:
+                    pass
+                
+                tempcoord=[k for k in coord]
+                for k in adatom_coord:
+                    tempcoord.append(k+lv1*i/(n-1)+lv2*j/(n-1))
+                tempcoord=np.array(tempcoord)
+                
+                temptypes=[k for k in atomtypes]
+                for k in adatom_types:
+                    temptypes.append(k)
+                temptypes=np.array(temptypes)
+                
+                tempnums=[k for k in atomnums]
+                for k in adatom_nums:
+                    tempnums.append(k)
+                tempnums=np.array(tempnums)
+                
+                write_poscar(os.path.join('_{}{}'.format(i,j),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+                
+                for k in ['KPOINTS','POTCAR','INCAR']:
+                    copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i,j),k))
+                with open(os.path.join(template,'job.sh'),'r') as file:
+                    lines=file.readlines()
+                    tempvar=lines[2].split('=')
+                    tempvar[1]='_{}{}'.format(i,j)
+                    lines[2]='='.join(tempvar)+'\n'
+                with open(os.path.join('_{}{}'.format(i,j),'job.sh'),'w') as file:
+                    for k in lines:
+                        file.write(k)
+    if interpolate_dim==1:
+        for i in range(n):
             try:
-                os.mkdir('_{}{}'.format(i,j))
+                os.mkdir('_{}'.format(i))
             except FileExistsError:
                 pass
             
             tempcoord=[k for k in coord]
             for k in adatom_coord:
-                tempcoord.append(k+lv1*i/(n-1)+lv2*j/(n-1))
+                tempcoord.append(k+lv1*i/(n-1))
             tempcoord=np.array(tempcoord)
             
             temptypes=[k for k in atomtypes]
@@ -59,22 +95,23 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,**args):
             temptypes=np.array(temptypes)
             
             tempnums=[k for k in atomnums]
-            tempnums.append(len(adatom_coord))
+            for k in adatom_nums:
+                tempnums.append(k)
             tempnums=np.array(tempnums)
             
-            write_poscar(os.path.join('_{}{}'.format(i,j),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+            write_poscar(os.path.join('_{}'.format(i),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
             
             for k in ['KPOINTS','POTCAR','INCAR']:
-                copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i,j),k))
+                copyfile(os.path.join(template,k),os.path.join('_{}'.format(i),k))
             with open(os.path.join(template,'job.sh'),'r') as file:
                 lines=file.readlines()
                 tempvar=lines[2].split('=')
-                tempvar[1]='_{}{}'.format(i,j)
+                tempvar[1]='_{}'.format(i)
                 lines[2]='='.join(tempvar)+'\n'
-            with open(os.path.join('_{}{}'.format(i,j),'job.sh'),'w') as file:
+            with open(os.path.join('_{}'.format(i),'job.sh'),'w') as file:
                 for k in lines:
                     file.write(k)
-                
+                    
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
         lines=file.readlines()
