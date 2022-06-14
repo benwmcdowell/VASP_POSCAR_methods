@@ -1,5 +1,7 @@
 import os
 import numpy as np
+import time
+import matplotlib.pyplot as plt
 from shutil import copyfile
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
@@ -112,6 +114,54 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 for k in lines:
                     file.write(k)
                     
+class dos_vs_pos():
+    def __init__(self,filepath,npts,num_adlayer_atoms):
+        start=time.time()
+        self.pos=[]
+        self.npts=npts
+        for i in range(self.npts):
+            os.chdir(r"Y:\Au_RbI\Ben_2\rbi_trigonal_vertical_shifts_v2\_{}".format(i))
+            dos,energies=parse_doscar(r"./DOSCAR")[:2]
+            if i==0:
+                self.ldos=np.zeros((3,npts,len(energies)))
+                self.energies=np.zeros(len(energies))
+            self.energies+=energies/self.npts
+            for j in range(1,49):
+                for k in dos[j]:
+                    self.ldos[0,i]+=k
+            for j in range(-6,-3):
+                for k in dos[j]:
+                    self.ldos[1,i]+=k
+            for j in range(-3,0):
+                for k in dos[j]:
+                    self.ldos[2,i]+=k
+            lv,coord,atomtypes,atomnums=parse_poscar(r"./POSCAR")[:4]
+            self.pos.append(np.average(coord[-num_adlayer_atoms:,2])-np.max(coord[:-num_adlayer_atoms,2]))
+            
+        self.lv=lv
+        self.atomtypes=atomtypes
+        self.atomnums=atomnums
+        self.pos=np.array(self.pos)
+        
+        print('total time to read files: {} min'.format((time.time()-start)/60))
+            
+    def plot_dos_vs_pos(self,types_to_plot):
+        partial_dos=np.zeros((self.npts,len(self.energies)))
+        counter=0
+        for i in range(len(self.atomtypes)):
+            if i in types_to_plot:
+                partial_dos+=self.ldos[i]
+                counter+=1
+        partial_dos/=counter
+            
+        self.ldos_fig,self.ldos_ax=plt.subplots(1,1)
+        self.ldos_ax.pcolormesh(np.array([self.energies for i in range(len(self.pos))]),np.array([[self.pos[i] for j in range(len(self.energies))] for i in range(len(self.pos))]),partial_dos,shading='nearest',cmap='vivid')
+        plt.ylabel('substrate-adlayer seperation / $\AA$')
+        plt.xlabel('energy - $E_F$ / eV')
+        plt.show()
+
+
+                    
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
         lines=file.readlines()
@@ -177,3 +227,45 @@ def write_poscar(ofile, lv, coord, atomtypes, atomnums, **args):
                     file.write('  ')
                     file.write(args['seldyn'][i][j])
             file.write('\n')
+            
+#reads DOSCAR
+def parse_doscar(filepath):
+    with open(filepath,'r') as file:
+        line=file.readline().split()
+        atomnum=int(line[0])
+        for i in range(5):
+            line=file.readline().split()
+        nedos=int(line[2])
+        ef=float(line[3])
+        dos=[]
+        energies=[]
+        for i in range(atomnum+1):
+            if i!=0:
+                line=file.readline()
+            for j in range(nedos):
+                line=file.readline().split()
+                if i==0:
+                    energies.append(float(line[0]))
+                if j==0:
+                    temp_dos=[[] for k in range(len(line)-1)]
+                for k in range(len(line)-1):
+                    temp_dos[k].append(float(line[k+1]))
+            dos.append(temp_dos)
+    energies=np.array(energies)-ef
+
+    #orbitals contains the type of orbital found in each array of the site projected dos
+    num_columns=np.shape(dos[1:])[1]
+    if num_columns==3:
+        orbitals=['s','p','d']
+    elif num_columns==6:
+        orbitals=['s_up','s_down','p_up','p_down','d_up','d_down']
+    elif num_columns==9:
+        orbitals=['s','p_y','p_z','p_x','d_xy','d_yz','d_z2','d_xz','d_x2-y2']
+    elif num_columns==18:
+        orbitals=['s_up','s_down','p_y_up','p_y_down','p_z_up','p_z_down','p_x_up','p_x_down','d_xy_up','d_xy_down','d_yz_up','d_yz_down','d_z2_up','d_z2_down','d_xz_up','d_xz_down','d_x2-y2_up','d_x2-y2_down']
+        
+    #dos is formatted as [[total dos],[atomic_projected_dos for i in range(atomnum)]]
+    #total dos has a shape of (4,nedos): [[spin up],[spin down],[integrated, spin up],[integrated spin down]]
+    #atomic ldos have shapes of (6,nedos): [[i,j] for j in [spin up, spin down] for i in [s,p,d]]
+    #energies has shape (1,nedos) and contains the energies that each dos should be plotted against
+    return dos, energies, ef, orbitals
