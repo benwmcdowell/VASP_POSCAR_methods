@@ -156,9 +156,9 @@ class dos_vs_pos():
             
         self.ldos_fig,self.ldos_ax=plt.subplots(1,1)
         self.ldos_ax.pcolormesh(np.array([self.energies for i in range(len(self.pos))]),np.array([[self.pos[i] for j in range(len(self.energies))] for i in range(len(self.pos))]),partial_dos,shading='nearest',cmap='vivid')
-        plt.ylabel('substrate-adlayer seperation / $\AA$')
-        plt.xlabel('energy - $E_F$ / eV')
-        plt.show()
+        self.ldos_ax.set(ylabel='substrate-adlayer seperation / $\AA$')
+        self.ldos_ax.set(xlabel='energy - $E_F$ / eV')
+        self.ldos_fig.show()
 
 
                     
