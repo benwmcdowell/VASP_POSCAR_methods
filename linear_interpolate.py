@@ -3,6 +3,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from shutil import copyfile
+from scipy.optimize import curve_fit
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
@@ -149,6 +150,7 @@ class dos_vs_pos():
         
         self.peak_pos=[]
         self.peak_energies=[]
+        self.coupling_params=[]
         
     def write_ldos(self):
         for i in range(len(self.atomtypes)):
@@ -185,14 +187,21 @@ class dos_vs_pos():
             self.peak_energies[-1].append(self.energies[temp_index])
             erange[0]=int(temp_index-ewidth/2)
             erange[1]=int(temp_index+ewidth/2)
+        self.peak_pos[-1]=np.array(self.peak_pos[-1])
+        self.peak_energies[-1]=np.array(self.peak_energies[-1])
             
-    def plot_ldos_peaks(self,fit=True):
+    def plot_ldos_peaks(self):
         if not hasattr(self,'peak_fig'):
             self.peak_fig,self.peak_ax=plt.subplots(1,1)
             
         for i in range(len(self.peak_pos)):
-            self.peak_ax.scatter(self.peak_energies[i],self.peak_pos[i])
             self.ldos_ax.scatter(self.peak_energies[i],self.peak_pos[i])
+            
+            eref=self.peak_energies[i][-1]
+            self.coupling_params.append(np.sqrt(eref*(self.peak_energies[i]-eref)))
+            self.peak_ax.scatter(self.peak_pos[i],self.coupling_params[-1])
+            self.peak_ax.set(xlabel='substrate-adlayer seperation / $\AA$')
+            self.peak_ax.set(ylabel='coupling parameter / eV')
         self.peak_fig.show()
             
     def plot_dos_vs_pos(self,types_to_plot):
