@@ -115,26 +115,28 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                     file.write(k)
                     
 class dos_vs_pos():
-    def __init__(self,filepath,npts,num_adlayer_atoms):
+    def __init__(self,filepath,npts,num_adlayer_atoms,load_doscars=True):
         start=time.time()
         self.pos=[]
         self.npts=npts
+        self.fp=filepath
         for i in range(self.npts):
             os.chdir(r"Y:\Au_RbI\Ben_2\rbi_trigonal_vertical_shifts_v2\_{}".format(i))
-            dos,energies=parse_doscar(r"./DOSCAR")[:2]
-            if i==0:
-                self.ldos=np.zeros((3,npts,len(energies)))
-                self.energies=np.zeros(len(energies))
-            self.energies+=energies/self.npts
-            for j in range(1,49):
-                for k in dos[j]:
-                    self.ldos[0,i]+=k
-            for j in range(-6,-3):
-                for k in dos[j]:
-                    self.ldos[1,i]+=k
-            for j in range(-3,0):
-                for k in dos[j]:
-                    self.ldos[2,i]+=k
+            if load_doscars:
+                dos,energies=parse_doscar(r"./DOSCAR")[:2]
+                if i==0:
+                    self.ldos=np.zeros((3,npts,len(energies)))
+                    self.energies=np.zeros(len(energies))
+                self.energies+=energies/self.npts
+                for j in range(1,49):
+                    for k in dos[j]:
+                        self.ldos[0,i]+=k
+                for j in range(-6,-3):
+                    for k in dos[j]:
+                        self.ldos[1,i]+=k
+                for j in range(-3,0):
+                    for k in dos[j]:
+                        self.ldos[2,i]+=k
             lv,coord,atomtypes,atomnums=parse_poscar(r"./POSCAR")[:4]
             self.pos.append(np.average(coord[-num_adlayer_atoms:,2])-np.max(coord[:-num_adlayer_atoms,2]))
             
@@ -144,12 +146,60 @@ class dos_vs_pos():
         self.pos=np.array(self.pos)
         
         print('total time to read files: {} min'.format((time.time()-start)/60))
+        
+        self.peak_pos=[]
+        self.peak_energies=[]
+        
+    def write_ldos(self):
+        for i in range(len(self.atomtypes)):
+            np.savetxt(os.path.join(self.fp,'{}_dos'.format(self.atomtypes[i])),self.ldos[i])
+        np.savetxt(os.path.join(self.fp,'energies'),self.energies)
+            
+    def load_ldos(self):
+        tempvar=[]
+        for i in range(len(self.atomtypes)):
+            tempvar.append(np.loadtxt(os.path.join(self.fp,'{}_dos'.format(self.atomtypes[i]))))
+        self.ldos=np.zeros((len(self.atomtypes),np.shape(tempvar)[1],np.shape(tempvar)[2]))
+        for i in range(len(self.atomtypes)):
+            self.ldos[i]+=tempvar[i]
+        self.energies=np.loadtxt(os.path.join(self.fp,'energies'))
+            
+    def find_ldos_peaks(self,erange,min_pos,types_to_plot):
+        partial_dos=np.zeros((self.npts,len(self.energies)))
+        counter=0
+        for i in range(len(self.atomtypes)):
+            if self.atomtypes[i] in types_to_plot:
+                partial_dos+=self.ldos[i]
+                counter+=1
+        partial_dos/=counter
+        
+        self.peak_pos.append([])
+        self.peak_energies.append([])
+        min_pos=np.argmin(abs(self.pos-min_pos))
+        for i in range(2):
+            erange[i]=np.argmin(abs(self.energies-erange[i]))
+        ewidth=erange[1]-erange[0]
+        for i in range(min_pos,self.npts):
+            self.peak_pos[-1].append(self.pos[i])
+            temp_index=np.argmax(partial_dos[i,erange[0]:erange[1]])+erange[0]
+            self.peak_energies[-1].append(self.energies[temp_index])
+            erange[0]=int(temp_index-ewidth/2)
+            erange[1]=int(temp_index+ewidth/2)
+            
+    def plot_ldos_peaks(self,fit=True):
+        if not hasattr(self,'peak_fig'):
+            self.peak_fig,self.peak_ax=plt.subplots(1,1)
+            
+        for i in range(len(self.peak_pos)):
+            self.peak_ax.scatter(self.peak_energies[i],self.peak_pos[i])
+            self.ldos_ax.scatter(self.peak_energies[i],self.peak_pos[i])
+        self.peak_fig.show()
             
     def plot_dos_vs_pos(self,types_to_plot):
         partial_dos=np.zeros((self.npts,len(self.energies)))
         counter=0
         for i in range(len(self.atomtypes)):
-            if i in types_to_plot:
+            if self.atomtypes[i] in types_to_plot:
                 partial_dos+=self.ldos[i]
                 counter+=1
         partial_dos/=counter
@@ -160,8 +210,6 @@ class dos_vs_pos():
         self.ldos_ax.set(xlabel='energy - $E_F$ / eV')
         self.ldos_fig.show()
 
-
-                    
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
         lines=file.readlines()
