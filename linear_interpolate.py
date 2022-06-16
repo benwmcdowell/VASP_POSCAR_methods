@@ -203,6 +203,15 @@ class dos_vs_pos():
             self.peak_ax.set(xlabel='substrate-adlayer seperation / $\AA$')
             self.peak_ax.set(ylabel='coupling parameter / eV')
         self.peak_fig.show()
+        
+    #  h is the index of the HOMO band, l is the index of the LUMO band, and g is the optional index of the gap band
+    def plot_gap_state_evolution(self,h,l,g=False):
+        self.gap_state_energies=-self.coupling_params[h]**2/self.peak_energies[h][-1]-self.coupling_params[l]**2/self.peak_energies[l][-1]
+        self.ldos_ax.scatter(self.gap_state_energies,self.peak_pos[h])
+    
+        if type(g)==int:
+            error=np.abs(self.gap_state_energies-self.peak_energies[g])
+            print('average error in prediction of mid-gap state energy = {} eV'.format(np.average(error)))
             
     def plot_dos_vs_pos(self,types_to_plot):
         partial_dos=np.zeros((self.npts,len(self.energies)))
