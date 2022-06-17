@@ -223,9 +223,11 @@ class dos_vs_pos():
         partial_dos/=counter
             
         self.ldos_fig,self.ldos_ax=plt.subplots(1,1)
-        self.ldos_ax.pcolormesh(np.array([self.energies for i in range(len(self.pos))]),np.array([[self.pos[i] for j in range(len(self.energies))] for i in range(len(self.pos))]),partial_dos,shading='nearest',cmap='vivid')
+        self.ldos_plot=self.ldos_ax.pcolormesh(np.array([self.energies for i in range(len(self.pos))]),np.array([[self.pos[i] for j in range(len(self.energies))] for i in range(len(self.pos))]),partial_dos,shading='nearest',cmap='vivid')
         self.ldos_ax.set(ylabel='substrate-adlayer seperation / $\AA$')
         self.ldos_ax.set(xlabel='energy - $E_F$ / eV')
+        self.cbar=self.ldos_fig.colorbar(self.ldos_plot,ax=self.ldos_ax,cmap='vivid',orientation='horizontal',pad=0.1)
+        self.cbar.set_label('LDOS / states $eV^{-1}$')
         self.ldos_fig.show()
 
 def parse_poscar(ifile):
