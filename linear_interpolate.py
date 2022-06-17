@@ -138,9 +138,9 @@ class dos_vs_pos():
                         for k in range(sum(atomnums[:j])+1,sum(atomnums[:j+1])+1):
                             for l in dos[k]:
                                 self.ldos[j,i]+=l
-                    print(i)
             
-        self.energies/=counter
+        if load_doscars:
+            self.energies/=counter
         self.lv=lv
         self.atomtypes=atomtypes
         self.atomnums=atomnums
@@ -214,7 +214,7 @@ class dos_vs_pos():
             error=np.abs(self.gap_state_energies-self.peak_energies[g])
             print('average error in prediction of mid-gap state energy = {} eV'.format(np.average(error)))
             
-    def plot_dos_vs_pos(self,types_to_plot):
+    def plot_dos_vs_pos(self,types_to_plot,show_cbar=False):
         partial_dos=np.zeros((self.npts,len(self.energies)))
         counter=0
         for i in range(len(self.atomtypes)):
@@ -227,8 +227,9 @@ class dos_vs_pos():
         self.ldos_plot=self.ldos_ax.pcolormesh(np.array([self.energies for i in range(len(self.pos))]),np.array([[self.pos[i] for j in range(len(self.energies))] for i in range(len(self.pos))]),partial_dos,shading='nearest',cmap='vivid')
         self.ldos_ax.set(ylabel='substrate-adlayer seperation / $\AA$')
         self.ldos_ax.set(xlabel='energy - $E_F$ / eV')
-        self.cbar=self.ldos_fig.colorbar(self.ldos_plot,ax=self.ldos_ax,cmap='vivid',orientation='horizontal',pad=0.1)
-        self.cbar.set_label('LDOS / states $eV^{-1}$')
+        if show_cbar:
+            self.cbar=self.ldos_fig.colorbar(self.ldos_plot,ax=self.ldos_ax,cmap='vivid',orientation='horizontal',pad=0.1)
+            self.cbar.set_label('LDOS / states $eV^{-1}$')
         self.ldos_fig.show()
 
 def parse_poscar(ifile):
