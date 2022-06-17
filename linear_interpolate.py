@@ -121,26 +121,26 @@ class dos_vs_pos():
         self.pos=[]
         self.npts=npts
         self.fp=filepath
+        counter=0
         for i in range(self.npts):
-            os.chdir(r"Y:\Au_RbI\Ben_2\rbi_trigonal_vertical_shifts_v2\_{}".format(i))
-            if load_doscars:
-                dos,energies=parse_doscar(r"./DOSCAR")[:2]
-                if i==0:
-                    self.ldos=np.zeros((3,npts,len(energies)))
-                    self.energies=np.zeros(len(energies))
-                self.energies+=energies/self.npts
-                for j in range(1,49):
-                    for k in dos[j]:
-                        self.ldos[0,i]+=k
-                for j in range(-6,-3):
-                    for k in dos[j]:
-                        self.ldos[1,i]+=k
-                for j in range(-3,0):
-                    for k in dos[j]:
-                        self.ldos[2,i]+=k
+            os.chdir(os.path.join(self.fp,'_{}'.format(i)))
             lv,coord,atomtypes,atomnums=parse_poscar(r"./POSCAR")[:4]
             self.pos.append(np.average(coord[-num_adlayer_atoms:,2])-np.max(coord[:-num_adlayer_atoms,2]))
+            if load_doscars and os.path.exists('./DOSCAR'):
+                if os.path.getsize('./DOSCAR')!=0:
+                    dos,energies=parse_doscar(r"./DOSCAR")[:2]
+                    if counter==0:
+                        self.ldos=np.zeros((len(atomnums),npts,len(energies)))
+                        self.energies=np.zeros(len(energies))
+                    counter+=1
+                    self.energies+=energies
+                    for j in range(len(atomnums)):
+                        for k in range(sum(atomnums[:j])+1,sum(atomnums[:j+1])+1):
+                            for l in dos[k]:
+                                self.ldos[j,i]+=l
+                    print(i)
             
+        self.energies/=counter
         self.lv=lv
         self.atomtypes=atomtypes
         self.atomnums=atomnums
@@ -182,11 +182,12 @@ class dos_vs_pos():
             erange[i]=np.argmin(abs(self.energies-erange[i]))
         ewidth=erange[1]-erange[0]
         for i in range(min_pos,self.npts):
-            self.peak_pos[-1].append(self.pos[i])
-            temp_index=np.argmax(partial_dos[i,erange[0]:erange[1]])+erange[0]
-            self.peak_energies[-1].append(self.energies[temp_index])
-            erange[0]=int(temp_index-ewidth/2)
-            erange[1]=int(temp_index+ewidth/2)
+            if np.max(partial_dos[i,erange[0]:erange[1]])!=0.0:
+                temp_index=np.argmax(partial_dos[i,erange[0]:erange[1]])+erange[0]
+                self.peak_energies[-1].append(self.energies[temp_index])
+                erange[0]=int(temp_index-ewidth/2)
+                erange[1]=int(temp_index+ewidth/2)
+                self.peak_pos[-1].append(self.pos[i])
         self.peak_pos[-1]=np.array(self.peak_pos[-1])
         self.peak_energies[-1]=np.array(self.peak_energies[-1])
             
