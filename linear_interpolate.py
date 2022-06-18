@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
-def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),**args):
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),nshift=0,**args):
     try:
         os.mkdir(output)
     except FileExistsError:
@@ -49,7 +49,7 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         for i in range(n):
             for j in range(n):
                 try:
-                    os.mkdir('_{}{}'.format(i,j))
+                    os.mkdir('_{}{}'.format(i+nshift,j+nshift))
                 except FileExistsError:
                     pass
                 
@@ -68,22 +68,22 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                     tempnums.append(k)
                 tempnums=np.array(tempnums)
                 
-                write_poscar(os.path.join('_{}{}'.format(i,j),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+                write_poscar(os.path.join('_{}{}'.format(i+nshift,j+nshift),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
                 
                 for k in ['KPOINTS','POTCAR','INCAR']:
-                    copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i,j),k))
+                    copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i+nshift,j+nshift),k))
                 with open(os.path.join(template,'job.sh'),'r') as file:
                     lines=file.readlines()
                     tempvar=lines[2].split('=')
-                    tempvar[1]='_{}{}'.format(i,j)
+                    tempvar[1]='_{}{}'.format(i+nshift,j+nshift)
                     lines[2]='='.join(tempvar)+'\n'
-                with open(os.path.join('_{}{}'.format(i,j),'job.sh'),'w') as file:
+                with open(os.path.join('_{}{}'.format(i+nshift,j+nshift),'job.sh'),'w') as file:
                     for k in lines:
                         file.write(k)
     if interpolate_dim==1:
         for i in range(n):
             try:
-                os.mkdir('_{}'.format(i))
+                os.mkdir('_{}'.format(i+nshift))
             except FileExistsError:
                 pass
             
@@ -102,16 +102,16 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 tempnums.append(k)
             tempnums=np.array(tempnums)
             
-            write_poscar(os.path.join('_{}'.format(i),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+            write_poscar(os.path.join('_{}'.format(i+nshift),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
             
             for k in ['KPOINTS','POTCAR','INCAR']:
-                copyfile(os.path.join(template,k),os.path.join('_{}'.format(i),k))
+                copyfile(os.path.join(template,k),os.path.join('_{}'.format(i+nshift),k))
             with open(os.path.join(template,'job.sh'),'r') as file:
                 lines=file.readlines()
                 tempvar=lines[2].split('=')
-                tempvar[1]='_{}'.format(i)
+                tempvar[1]='_{}'.format(i+nshift)
                 lines[2]='='.join(tempvar)+'\n'
-            with open(os.path.join('_{}'.format(i),'job.sh'),'w') as file:
+            with open(os.path.join('_{}'.format(i+nshift),'job.sh'),'w') as file:
                 for k in lines:
                     file.write(k)
                     
