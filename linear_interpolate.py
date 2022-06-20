@@ -165,6 +165,21 @@ class dos_vs_pos():
         for i in range(len(self.atomtypes)):
             self.ldos[i]+=tempvar[i]
         self.energies=np.loadtxt(os.path.join(self.fp,'energies'))
+        
+    def find_single_ldos_peak(self,pos,erange,types_to_plot):
+        partial_dos=np.zeros((self.npts,len(self.energies)))
+        counter=0
+        for i in range(len(self.atomtypes)):
+            if self.atomtypes[i] in types_to_plot:
+                partial_dos+=self.ldos[i]
+                counter+=1
+        partial_dos/=counter
+        
+        pos=np.argmin(abs(self.pos-pos))
+        for i in range(2):
+            erange[i]=np.argmin(abs(self.energies-erange[i]))
+        peak_index=np.argmax(partial_dos[pos,erange[0]:erange[1]])
+        print('peak at {} eV'.format(self.energies[peak_index]))
             
     def find_ldos_peaks(self,erange,min_pos,types_to_plot):
         partial_dos=np.zeros((self.npts,len(self.energies)))
