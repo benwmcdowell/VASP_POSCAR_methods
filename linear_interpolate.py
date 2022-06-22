@@ -141,14 +141,14 @@ class dos_vs_pos():
             
         if load_doscars:
             self.energies/=counter
-        if not load_doscars:
-            self.load_ldos()
         self.lv=lv
         self.atomtypes=atomtypes
         self.atomnums=atomnums
         self.pos=np.array(self.pos)
+        if not load_doscars:
+            self.load_ldos()
         
-        sorted_args=self.pos.argsort()[::-1]
+        sorted_args=self.pos.argsort()
         self.pos=self.pos[sorted_args]
         self.ldos=self.ldos[:,sorted_args,:]
         
