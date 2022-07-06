@@ -36,7 +36,7 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         adatom_coord+=pos
     else:
         adatom_coord=[pos]
-        adatom_types=adatom
+        adatom_types=[adatom]
         adatom_nums=[1]
         
     seldyn=[]
@@ -52,7 +52,7 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         for i in range(n[0]):
             for j in range(n[1]):
                 try:
-                    os.mkdir('_{}{}'.format(i+nshift,j+nshift))
+                    os.mkdir('_{}-{}'.format(i+nshift,j+nshift))
                 except FileExistsError:
                     pass
                 
@@ -71,16 +71,16 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                     tempnums.append(k)
                 tempnums=np.array(tempnums)
                 
-                write_poscar(os.path.join('_{}{}'.format(i+nshift,j+nshift),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
+                write_poscar(os.path.join('_{}-{}'.format(i+nshift,j+nshift),'POSCAR'),lv,tempcoord,temptypes,tempnums,seldyn=seldyn)
                 
                 for k in ['KPOINTS','POTCAR','INCAR']:
-                    copyfile(os.path.join(template,k),os.path.join('_{}{}'.format(i+nshift,j+nshift),k))
+                    copyfile(os.path.join(template,k),os.path.join('_{}-{}'.format(i+nshift,j+nshift),k))
                 with open(os.path.join(template,'job.sh'),'r') as file:
                     lines=file.readlines()
                     tempvar=lines[2].split('=')
-                    tempvar[1]='_{}{}'.format(i+nshift,j+nshift)
+                    tempvar[1]='_{}-{}'.format(i+nshift,j+nshift)
                     lines[2]='='.join(tempvar)+'\n'
-                with open(os.path.join('_{}{}'.format(i+nshift,j+nshift),'job.sh'),'w') as file:
+                with open(os.path.join('_{}-{}'.format(i+nshift,j+nshift),'job.sh'),'w') as file:
                     for k in lines:
                         file.write(k)
     if interpolate_dim==1:
