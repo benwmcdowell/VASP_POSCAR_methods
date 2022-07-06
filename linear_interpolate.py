@@ -44,10 +44,13 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         seldyn.append('FFF')
     for i in range(len(adatom_coord)):
         seldyn.append('FFT')
+        
+    if type(n)==int and interpolate_dim==2:
+        n=(n,n)
     
     if interpolate_dim==2:
-        for i in range(n):
-            for j in range(n):
+        for i in range(n[0]):
+            for j in range(n[1]):
                 try:
                     os.mkdir('_{}{}'.format(i+nshift,j+nshift))
                 except FileExistsError:
@@ -55,7 +58,7 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 
                 tempcoord=[k for k in coord]
                 for k in adatom_coord:
-                    tempcoord.append(k+lv1*i/(n-1)+lv2*j/(n-1))
+                    tempcoord.append(k+lv1*i/(n[0]-1)+lv2*j/(n[1]-1))
                 tempcoord=np.array(tempcoord)
                 
                 temptypes=[k for k in atomtypes]
