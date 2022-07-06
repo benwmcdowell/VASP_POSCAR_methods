@@ -25,6 +25,12 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         rot=np.array([[np.cos(theta),-np.sin(theta),0],[np.sin(theta),np.cos(theta),0],[0,0,1.0]])
     else:
         rot=np.identity(3)
+        
+    if 'partition_names' in args:
+        partition_names=args['partition_names']
+        partition_counter=0
+    else:
+        None
     
     if os.path.exists(adatom):
         adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
@@ -80,6 +86,13 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                     tempvar=lines[2].split('=')
                     tempvar[1]='_{}-{}'.format(i+nshift,j+nshift)
                     lines[2]='='.join(tempvar)+'\n'
+                    if type(partition_names)==list:
+                        tempvar=lines[1].split('=')
+                        tempvar[1]='{}'.format(partition_names[partition_counter])
+                        lines[1]='='.join(tempvar)+'\n'
+                        partition_counter+=1
+                        if partition_counter==len(partition_names):
+                            partition_counter=0
                 with open(os.path.join('_{}-{}'.format(i+nshift,j+nshift),'job.sh'),'w') as file:
                     for k in lines:
                         file.write(k)
