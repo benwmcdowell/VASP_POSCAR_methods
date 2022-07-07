@@ -30,7 +30,7 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
         partition_names=args['partition_names']
         partition_counter=0
     else:
-        None
+        partition_names=None
     
     if os.path.exists(adatom):
         adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
@@ -130,6 +130,54 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
             with open(os.path.join('_{}'.format(i+nshift),'job.sh'),'w') as file:
                 for k in lines:
                     file.write(k)
+                    
+class plot_2d():
+    def __init__(self,filepath,npts):
+        self.filepath=filepath
+        if type(npts)==int:
+            self.npts=(npts,npts)
+        else:
+            self.npts=npts
+        self.x=np.zeros(self.npts)
+        self.y=np.zeros(self.npts)
+        self.energies=np.zeros(self.npts)
+        self.heights=np.zeros(self.npts)
+        self.load_directory()
+        
+    def load_directory(self):
+        for i in range(self.npts[0]):
+            for j in range(self.npts[1]):
+                try:
+                    os.chdir(os.path.join(self.filepath,'_{}-{}'.format(i,j)))
+                    tempenergy=parse_outcar('./OUTCAR')
+                    self.energies[i,j]=tempenergy
+                    if os.path.getsize('./CONTCAR')!=0:
+                        tempcoord=parse_poscar('./CONTCAR')[1][-1]
+                        self.x[i,j]=tempcoord[0]
+                        self.y[i,j]=tempcoord[1]
+                        self.heights[i,j]=tempcoord[2]
+                except FileNotFoundError:
+                    pass
+                
+    def plot_energies(self):
+        self.fig_energy,self.ax_energy=plt.subplots(1,1)
+        plt.pcolormesh(self.x,self.y,self.energies,cmap='vivid')
+        self.ax_energy.set(xlabel='position / $\AA$', ylabe='position / $\AA$')
+        self.ax_energy.set_aspect('equal')
+        self.fig_energy.show()
+                
+def parse_outcar(fp):
+    energy=0
+    with open(fp) as file:
+        while True:
+            line=file.readline()
+            if not line:
+                break
+            if 'energy(sigma' in line:
+                line=line.split()
+                energy=float(line[-1])
+                
+    return energy
                     
 class dos_vs_pos():
     def __init__(self,filepath,npts,num_adlayer_atoms,load_doscars=True):
