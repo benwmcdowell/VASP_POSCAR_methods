@@ -144,6 +144,9 @@ class plot_2d():
         self.heights=np.zeros(self.npts)
         self.load_directory()
         
+        #normalization
+        self.energies-=np.min(self.energies)
+        
     def load_directory(self):
         for i in range(self.npts[0]):
             for j in range(self.npts[1]):
@@ -152,7 +155,15 @@ class plot_2d():
                     tempenergy=parse_outcar('./OUTCAR')
                     self.energies[i,j]=tempenergy
                     if os.path.getsize('./CONTCAR')!=0:
-                        tempcoord=parse_poscar('./CONTCAR')[1][-1]
+                        lv,tempcoord=parse_poscar('./CONTCAR')[:2]
+                        tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))
+                        for k in range(2):
+                            while tempcoord[k]>1.0 or tempcoord[k]<0.0:
+                                if tempcoord[k]>1.0:
+                                    tempcoord[k]-=1.0
+                                if tempcoord[k]<0.0:
+                                    tempcoord[k]+=1.0
+                        tempcoord=np.dot(tempcoord,lv)
                         self.x[i,j]=tempcoord[0]
                         self.y[i,j]=tempcoord[1]
                         self.heights[i,j]=tempcoord[2]
@@ -161,8 +172,8 @@ class plot_2d():
                 
     def plot_energies(self):
         self.fig_energy,self.ax_energy=plt.subplots(1,1)
-        plt.pcolormesh(self.x,self.y,self.energies,cmap='vivid')
-        self.ax_energy.set(xlabel='position / $\AA$', ylabe='position / $\AA$')
+        plt.pcolormesh(self.x,self.y,self.energies,shading='nearest',cmap='vivid')
+        self.ax_energy.set(xlabel='position / $\AA$', ylabel='position / $\AA$')
         self.ax_energy.set_aspect('equal')
         self.fig_energy.show()
                 
