@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
-def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),nshift=0,**args):
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),nshift=0,job_name=None,alt_pos=[],**args):
     try:
         os.mkdir(output)
     except FileExistsError:
@@ -98,6 +98,14 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                         file.write(k)
     if interpolate_dim==1:
         for i in range(n):
+            #alt_pos is a list. Each item in the list has a tuple with a in and max index specifying the range over which the adatom positoin is modified. The item also includes a 1x3 numpy array with the coordinates of the alternative adatom position.
+            if len(alt_pos)==0:
+                adatom_coord=[pos]
+            else:
+                for j in alt_pos:
+                    if i in range(min(j[0]),max(j[0])):
+                        adatom_coord=j[1]
+                        
             try:
                 os.mkdir('_{}'.format(i+nshift))
             except FileExistsError:
@@ -125,7 +133,10 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
             with open(os.path.join(template,'job.sh'),'r') as file:
                 lines=file.readlines()
                 tempvar=lines[2].split('=')
-                tempvar[1]='_{}'.format(i+nshift)
+                if not job_name:
+                    tempvar[1]='_{}'.format(i+nshift)
+                else:
+                    tempvar[1]='{}_{}'.format(job_name,i+nshift)
                 lines[2]='='.join(tempvar)+'\n'
             with open(os.path.join('_{}'.format(i+nshift),'job.sh'),'w') as file:
                 for k in lines:
@@ -152,8 +163,9 @@ class plot_2d():
             for j in range(self.npts[1]):
                 try:
                     os.chdir(os.path.join(self.filepath,'_{}-{}'.format(i,j)))
-                    tempenergy=parse_outcar('./OUTCAR')
-                    self.energies[i,j]=tempenergy
+                    tempenergy,completed=parse_outcar('./OUTCAR')
+                    if completed:
+                        self.energies[i,j]=tempenergy
                     if os.path.getsize('./CONTCAR')!=0:
                         lv,tempcoord=parse_poscar('./CONTCAR')[:2]
                         tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))
@@ -172,13 +184,21 @@ class plot_2d():
                 
     def plot_energies(self):
         self.fig_energy,self.ax_energy=plt.subplots(1,1)
-        plt.pcolormesh(self.x,self.y,self.energies,shading='nearest',cmap='vivid')
+        self.ax_energy.pcolormesh(self.x,self.y,self.energies,shading='nearest',cmap='vivid')
+        self.ax_energy.set(xlabel='position / $\AA$', ylabel='position / $\AA$')
+        self.ax_energy.set_aspect('equal')
+        self.fig_energy.show()
+        
+    def plot_energies_hexagonal(self):
+        self.fig_energy,self.ax_energy=plt.subplots(1,1)
+        
         self.ax_energy.set(xlabel='position / $\AA$', ylabel='position / $\AA$')
         self.ax_energy.set_aspect('equal')
         self.fig_energy.show()
                 
 def parse_outcar(fp):
     energy=0
+    completed=False
     with open(fp) as file:
         while True:
             line=file.readline()
@@ -187,8 +207,10 @@ def parse_outcar(fp):
             if 'energy(sigma' in line:
                 line=line.split()
                 energy=float(line[-1])
+            if 'required accuracy - stopping structural energy minimisation' in line:
+                completed=True
                 
-    return energy
+    return energy, completed
                     
 class dos_vs_pos():
     def __init__(self,filepath,npts,num_adlayer_atoms,load_doscars=True):
