@@ -154,6 +154,7 @@ class plot_1d_energies():
         
         #normalization
         self.energies-=np.min(self.energies)
+        self.heights-=np.min(self.heights)
         
     def load_directory(self):
         for i in range(self.npts):
@@ -182,6 +183,12 @@ class plot_1d_energies():
         self.efig,self.eax=plt.subplots(1,1)
         self.eax.scatter([self.x,self.y][axis],self.energies)
         self.eax.set(xlabel='position / $/AA$', ylabel='relative binding energy / eV')
+        self.efig.show()
+        
+    def plot_heights(self,axis):
+        self.efig,self.eax=plt.subplots(1,1)
+        self.eax.scatter([self.x,self.y][axis],self.heights)
+        self.eax.set(xlabel='position / $/AA$', ylabel='relative height / $\AA$')
         self.efig.show()
                     
 class plot_2d():
