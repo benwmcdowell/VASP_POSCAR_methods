@@ -142,6 +142,48 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 for k in lines:
                     file.write(k)
                     
+class plot_1d_energies():
+    def __init__(self,filepath,npts):
+        self.filepath=filepath
+        self.npts=npts
+        self.x=np.zeros(self.npts)
+        self.y=np.zeros(self.npts)
+        self.energies=np.zeros(self.npts)
+        self.heights=np.zeros(self.npts)
+        self.load_directory()
+        
+        #normalization
+        self.energies-=np.min(self.energies)
+        
+    def load_directory(self):
+        for i in range(self.npts):
+            try:
+                os.chdir(os.path.join(self.filepath,'_{}'.format(i)))
+                tempenergy,completed=parse_outcar('./OUTCAR')
+                if completed:
+                    self.energies[i]=tempenergy
+                if os.path.getsize('./CONTCAR')!=0:
+                    lv,tempcoord=parse_poscar('./CONTCAR')[:2]
+                    tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))
+                    for k in range(2):
+                        while tempcoord[k]>1.0 or tempcoord[k]<0.0:
+                            if tempcoord[k]>1.0:
+                                tempcoord[k]-=1.0
+                            if tempcoord[k]<0.0:
+                                tempcoord[k]+=1.0
+                    tempcoord=np.dot(tempcoord,lv)
+                    self.x[i]=tempcoord[0]
+                    self.y[i]=tempcoord[1]
+                    self.heights[i]=tempcoord[2]
+            except FileNotFoundError:
+                pass
+            
+    def plot_energies(self,axis):
+        self.efig,self.eax=plt.subplots(1,1)
+        self.eax.scatter([self.x,self.y][axis],self.energies)
+        self.eax.set(xlabel='position / $/AA$', ylabel='relative binding energy / eV')
+        self.efig.show()
+                    
 class plot_2d():
     def __init__(self,filepath,npts):
         self.filepath=filepath
