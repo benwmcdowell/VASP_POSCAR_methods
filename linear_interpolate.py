@@ -142,10 +142,11 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 for k in lines:
                     file.write(k)
                     
-class plot_1d_energies():
-    def __init__(self,filepath,npts):
+class plot_1d_data():
+    def __init__(self,filepath,npts, shift=np.zeros(3)):
         self.filepath=filepath
         self.npts=npts
+        self.shift=shift
         self.x=np.zeros(self.npts)
         self.y=np.zeros(self.npts)
         self.energies=np.zeros(self.npts)
@@ -165,7 +166,7 @@ class plot_1d_energies():
                     self.energies[i]=tempenergy
                 if os.path.getsize('./CONTCAR')!=0:
                     lv,tempcoord=parse_poscar('./CONTCAR')[:2]
-                    tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))
+                    tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))+self.shift
                     for k in range(2):
                         while tempcoord[k]>1.0 or tempcoord[k]<0.0:
                             if tempcoord[k]>1.0:
