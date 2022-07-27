@@ -165,15 +165,15 @@ class plot_1d_data():
                 if completed:
                     self.energies[i]=tempenergy
                 if os.path.getsize('./CONTCAR')!=0:
-                    lv,tempcoord=parse_poscar('./CONTCAR')[:2]
-                    tempcoord=np.dot(tempcoord[-1],np.linalg.inv(lv))+self.shift
+                    self.lv,tempcoord=parse_poscar('./CONTCAR')[:2]
+                    tempcoord=np.dot(tempcoord[-1],np.linalg.inv(self.lv))
                     for k in range(2):
                         while tempcoord[k]>1.0 or tempcoord[k]<0.0:
                             if tempcoord[k]>1.0:
                                 tempcoord[k]-=1.0
                             if tempcoord[k]<0.0:
                                 tempcoord[k]+=1.0
-                    tempcoord=np.dot(tempcoord,lv)
+                    tempcoord=np.dot(tempcoord,self.lv)-self.shift
                     self.x[i]=tempcoord[0]
                     self.y[i]=tempcoord[1]
                     self.heights[i]=tempcoord[2]
@@ -182,13 +182,13 @@ class plot_1d_data():
             
     def plot_energies(self,axis):
         self.efig,self.eax=plt.subplots(1,1)
-        self.eax.scatter([self.x,self.y][axis],self.energies)
+        self.eax.scatter([self.x,self.y][axis],self.energies,s=200)
         self.eax.set(xlabel='position / $/AA$', ylabel='relative binding energy / eV')
         self.efig.show()
         
     def plot_heights(self,axis):
         self.efig,self.eax=plt.subplots(1,1)
-        self.eax.scatter([self.x,self.y][axis],self.heights)
+        self.eax.scatter([self.x,self.y][axis],self.heights,s=200)
         self.eax.set(xlabel='position / $/AA$', ylabel='relative height / $\AA$')
         self.efig.show()
                     
