@@ -7,16 +7,17 @@ from scipy.optimize import curve_fit
 
 #adlayer structure can be specified either as a path to a POSCAR/CONTCAR or an atom type
 #if the adlayer is read from a file, the center of mass will be placed by the 3d vector pos
-def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),nshift=0,job_name=None,alt_pos=[],**args):
+def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2,adlayer_shift=np.array([1,1,1]),nshift=0,job_name=None,alt_pos=[],shift_adlayer_to_com=True,scale_lv=True,**args):
     try:
         os.mkdir(output)
     except FileExistsError:
         pass
     os.chdir(output)
     lv,coord,atomtypes,atomnums=parse_poscar(os.path.join(template,'POSCAR'))[:4]
-    lv1=np.dot(lv1,lv)
-    lv2=np.dot(lv2,lv)
-    pos=np.dot(pos,lv)
+    if scale_lv:
+        lv1=np.dot(lv1,lv)
+        lv2=np.dot(lv2,lv)
+        pos=np.dot(pos,lv)
     
     #if rotation is specified as an argument, the adlayer is rotated counter-clockwise by the angle specified by the argument
     #'rotation=30' will rotate the adlayer system 30 degrees counter-clockwise around the center of mass
@@ -34,10 +35,11 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
     
     if os.path.exists(adatom):
         adatom_lv,adatom_coord,adatom_types,adatom_nums=parse_poscar(adatom)[:4]
-        com=np.zeros(3)
-        for i in adatom_coord:
-            com+=i/len(adatom_coord)
-        adatom_coord-=com*adlayer_shift
+        if shift_adlayer_to_com:
+            com=np.zeros(3)
+            for i in adatom_coord:
+                com+=i/len(adatom_coord)
+            adatom_coord-=com*adlayer_shift
         adatom_coord=np.dot(adatom_coord,rot)
         adatom_coord+=pos
     else:
@@ -84,7 +86,10 @@ def interpolate_structure(template,output,adatom,pos,lv1,lv2,n,interpolate_dim=2
                 with open(os.path.join(template,'job.sh'),'r') as file:
                     lines=file.readlines()
                     tempvar=lines[2].split('=')
-                    tempvar[1]='_{}-{}'.format(i+nshift,j+nshift)
+                    if not job_name:
+                        tempvar[1]='_{}-{}'.format(i+nshift,j+nshift)
+                    else:
+                        tempvar[1]='{}_{}-{}'.format(job_name,i+nshift,j+nshift)
                     lines[2]='='.join(tempvar)+'\n'
                     if type(partition_names)==list:
                         tempvar=lines[1].split('=')
