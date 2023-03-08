@@ -15,7 +15,7 @@ def create_new_poscar_with_select_atomtypes(atoms_to_keep,ifile, ofile):
             for j in range(sum(atomnums[:i]),sum(atomnums[:i+1])):
                 new_coord.append(coord[j])
         
-    write_poscar(ofile, lv, new_coord, new_atomtypes, new_atomnums, seldyn=seldyn)
+    write_poscar(ofile, lv, new_coord, new_atomtypes, new_atomnums)
     
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
