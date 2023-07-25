@@ -16,7 +16,7 @@ def parse_xyz(ifile):
     
     for i in range(2,2+np.shape(coord)[0]):
         if lines[i][0] in atomtypes:
-            atomnums[-1]+=1
+            atomnums[atomtypes.index(lines[i][0])]+=1
         else:
             atomtypes.append(lines[i][0])
             atomnums.append(1)
