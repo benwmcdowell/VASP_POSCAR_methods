@@ -10,18 +10,25 @@ def parse_xyz(ifile):
     for i in range(len(lines)):
         lines[i]=lines[i].split()
     
-    coord=np.zeros((int(lines[0][0]),3))
+    coord=[]
     atomtypes=[]
     atomnums=[]
+    temp_coord=[]
     
-    for i in range(2,2+np.shape(coord)[0]):
+    for i in range(2,2+int(lines[0][0])):
         if lines[i][0] in atomtypes:
             atomnums[atomtypes.index(lines[i][0])]+=1
         else:
             atomtypes.append(lines[i][0])
             atomnums.append(1)
-        for j in range(3):
-            coord[i-2,j]=float(lines[i][j+1])
+            temp_coord.append([])
+        temp_coord[atomtypes.index(lines[i][0])].append(np.array([float(lines[i][j+1]) for j in range(3)]))
+            
+    for i in range(len(atomnums)):
+        for j in range(atomnums[i]):
+            coord.append(temp_coord[i][j])
+            
+    coord=np.array(coord)
             
     return coord,atomtypes,atomnums
 
